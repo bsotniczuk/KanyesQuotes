@@ -12,11 +12,13 @@ import java.util.List;
 
 public class MainController implements QuoteController.QuoteCallbackListener, SentimController.SentimCallbackListener {
 
-    QuoteController quoteController;
-    SentimController sentimController;
-    boolean isInternetConnected = false;
-    int times = 0;
-    List<Quote> quoteList;
+    private final QuoteController quoteController;
+    private final SentimController sentimController;
+    private boolean isInternetConnected = false;
+    private int times = 0;
+    private final List<Quote> quoteList;
+    private final int minQuotes = 5;
+    private final int maxQuotes = 20;
 
     public MainController(int times) {
         this.quoteController = new QuoteController(this);
@@ -27,14 +29,11 @@ public class MainController implements QuoteController.QuoteCallbackListener, Se
     }
 
     public void generateQuotes() {
-        System.out.println("_____________________\nQuotes pulled from (https://api.kanye.rest/) after ensuring uniqueness\n_____________________");
-        if (isInternetConnected) {
+        System.out.println("_____________________\nQuotes pulled from (https://api.kanye.rest/) after ensuring uniqueness:\n_____________________");
+        if (isInternetConnected)
             for (int i = 0; i < times; i++)
                 quoteController.fetchQuoteApi();
-        }
-        else {
-            System.out.println("I am sorry, you cannot connect to one of the APIs or you don't have an active internet connection");
-        }
+        else System.out.println("I am sorry, you cannot connect to one of the APIs or you don't have an active internet connection");
     }
 
     private boolean checkConnectivity(String urlString) {
@@ -42,7 +41,6 @@ public class MainController implements QuoteController.QuoteCallbackListener, Se
             URL url = new URL(urlString);
             URLConnection connection = url.openConnection();
             connection.connect();
-            //System.out.println("Internet is connected to: " + urlString); //to delete
             return true;
         } catch (MalformedURLException e) {
             System.out.println("Internet is not connected to: " + urlString + " | please reconnect to continue");
@@ -53,13 +51,13 @@ public class MainController implements QuoteController.QuoteCallbackListener, Se
     }
 
     private int getAndValidateInput(int times) {
-        if (times < 5) {
-            System.out.println("(Input " + times + " is too low) Lowest quantity of Kanye's quotes is 5, fetching 5 quotes");
-            return 5;
+        if (times < minQuotes) {
+            System.out.println("(Input " + times + " is too low) Lowest quantity of Kanye's quotes is " + minQuotes + ", fetching " + minQuotes + " quotes");
+            return minQuotes;
         }
-        else if (times > 20) {
-            System.out.println("(Input " + times + " is too high) Highest quantity of Kanye's quotes is 20, fetching 20 quotes");
-            return 20;
+        else if (times > maxQuotes) {
+            System.out.println("(Input " + times + " is too high) Highest quantity of Kanye's quotes is " + maxQuotes + ", fetching " + maxQuotes + " quotes");
+            return maxQuotes;
         }
         else return times;
     }
@@ -67,9 +65,7 @@ public class MainController implements QuoteController.QuoteCallbackListener, Se
     @Override
     public void onFetchProgress(Quote quote) {
         addQuoteAndCheckDuplicates(quote);
-
         if (checkCompletion()) {
-            for (int i = 0; i < quoteList.size(); i++) System.out.println("\"" + quoteList.get(i).getQuote() + "\"");
             System.out.println("_____________________"); //endof fetching
             analyseQuotes();
         }
@@ -77,6 +73,10 @@ public class MainController implements QuoteController.QuoteCallbackListener, Se
 
     @Override
     public void onFetchCompleted(List<Sentences> sentences) {
+        countPolarityAndDisplay(sentences);
+    }
+
+    private void countPolarityAndDisplay(List<Sentences> sentences) {
         int countPositive, countNegative, countNeutral;
         countPositive = countNegative = countNeutral = 0;
         Float extremeValue = (float) 0;
@@ -93,17 +93,20 @@ public class MainController implements QuoteController.QuoteCallbackListener, Se
                 extremeValue = polarity;
             }
         }
+        displayPolaritiesAndMostExtremeQuote(sentences, countPositive, countNegative, countNeutral, indexOfExtremeQuote);
+    }
 
+    private void displayPolaritiesAndMostExtremeQuote(List<Sentences> sentences, int countPositive, int countNegative, int countNeutral, int indexOfExtremeQuote) {
         System.out.println(
-                new StringBuilder("")
+                new StringBuilder()
                         .append("\nKanye's ").append(times).append(" quotes contain ")
                         .append(sentences.size()).append(" sentences with polarities:")
                         .append("\nPositive: ").append(countPositive)
                         .append("\nNegative: ").append(countNegative)
                         .append("\nNeutral: ").append(countNeutral)
-                        .append("\n\nKanye's most extreme quote with polarity of ")
+                        .append("\n\nKanye's most extreme sentence with polarity of ")
                         .append(sentences.get(indexOfExtremeQuote).getSentiment().getPolarity())
-                        .append(" is\n\"").append(sentences.get(indexOfExtremeQuote).getSentence()).append("\"")
+                        .append(" is:\n\"").append(sentences.get(indexOfExtremeQuote).getSentence()).append("\"")
                         .toString()
         );
     }
@@ -111,12 +114,11 @@ public class MainController implements QuoteController.QuoteCallbackListener, Se
     private void addQuoteAndCheckDuplicates(Quote quote) {
         if (!quoteList.contains(quote))
             quoteList.add(quote);
-        else quoteController.fetchQuoteApi();
+        else quoteController.fetchQuoteApi(); //fetch another quote if a duplicate was found
     }
 
     private boolean checkCompletion() {
-        if (quoteList.size() == times) return true;
-        else return false;
+        return quoteList.size() == times;
     }
 
     private void analyseQuotes() {
@@ -127,7 +129,7 @@ public class MainController implements QuoteController.QuoteCallbackListener, Se
     }
 
     private String convertQuotesListToString() {
-        StringBuilder sb = new StringBuilder("");
+        StringBuilder sb = new StringBuilder();
 
         for (int i = 0; i < quoteList.size(); i++) {
             String quote = quoteList.get(i).getQuote();

@@ -19,9 +19,9 @@ import java.util.concurrent.TimeUnit;
 public class SentimController {
 
     private SentimCallbackListener sentimCallbackListener;
-    SentimApi sentimApi;
-    List<Sentences> sentences;
-    OkHttpClient okHttpClient = null;
+    private SentimApi sentimApi;
+    private List<Sentences> sentences;
+    private OkHttpClient okHttpClient = null;
 
     public SentimController(SentimCallbackListener listener) {
         this.sentimCallbackListener = listener;
@@ -56,16 +56,16 @@ public class SentimController {
                     SentimResponse sentimResponse = response.body();
 
                     sentences = new ArrayList<>(Arrays.asList(sentimResponse.getSentences())); //get sentences array from sentim-api
-
                     sentimCallbackListener.onFetchCompleted(sentences);
+
                     okHttpClient.dispatcher().executorService().shutdown();
                     okHttpClient.connectionPool().evictAll();
                 }
             }
 
             @Override
-            public void onFailure(Call<SentimResponse> call, Throwable throwable) {
-
+            public void onFailure(Call<SentimResponse> call, Throwable t) {
+                System.out.println("Data call to API failed: " + t);
             }
         });
     }

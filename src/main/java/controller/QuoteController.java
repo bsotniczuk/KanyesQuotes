@@ -10,12 +10,15 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class QuoteController {
 
     private QuoteCallbackListener quoteCallbackListener;
+    private List<Quote> quoteList = new ArrayList<>();
 
     public QuoteController(QuoteCallbackListener listener) {
         quoteCallbackListener = listener;
@@ -41,6 +44,10 @@ public class QuoteController {
             public void onResponse(Call<Quote> call, Response<Quote> response) {
                 if (response.code() == 200) { //HTTP Code 200 equals to OK
                     Quote quote = response.body();
+                    if (!quoteList.contains(quote)) {
+                        quoteList.add(quote);
+                        System.out.println("\"" + response.body().getQuote() + "\"");
+                    }
                     quoteCallbackListener.onFetchProgress(quote);
                     shutdownAndAwaitTermination(okHttpClient);
                 } else System.out.println("Kanye Api declined to respond");
@@ -53,6 +60,9 @@ public class QuoteController {
         });
     }
 
+    /**
+     * https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/ExecutorService.html
+     */
     void shutdownAndAwaitTermination(OkHttpClient okHttpClient) {
         ExecutorService pool = okHttpClient.dispatcher().executorService();
         ConnectionPool connectionPool = okHttpClient.connectionPool();

@@ -7,7 +7,7 @@ public class Main {
     public static void main(String[] args) {
 
         Scanner sc = new Scanner(System.in);
-        String info = "Enter number of Kanyes quotes to fetch from api.kanye.rest\nnumber must be between 5 and 20: ";
+        String info = "Enter number of Kanyes quotes to fetch from api.kanye.rest\nNumber must be between 5 and 20: ";
         System.out.print(info);
         while (!sc.hasNextInt()) {
             System.out.print(info);
